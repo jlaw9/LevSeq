@@ -139,8 +139,9 @@ def cat_fastq_files(folder_path: str, output_path: str, reads_per_file: int = 40
         else:
             for fastq_file in fastq_files:
                 destination = output_path / fastq_file.name
-                shutil.copy(fastq_file, destination)
-                logging.info("Copied %s to %s", fastq_file, destination)
+                if not destination.is_file():
+                    shutil.copy(fastq_file, destination)
+                    logging.info("Copied %s to %s", fastq_file, destination)
         logging.info("All FASTQ files processed successfully to %s", output_path)
         return str(output_path)
     except Exception as e:
