@@ -30,87 +30,64 @@ After sequencing, you can identify variants, demultiplex, and combine with your 
 
 ### Installation
 
-We aimed to make LevSeq as simple to use as possible, this means you should be able to run it all using pip (note you need `samtools` 
-and `minimap2` installed on your path. However, if you have issues we recommend using the Docker instance! 
-(the pip version doesn't work well with mac M3 but docker does.)
-
-We recommend using terminal and a conda environment for installation:
-
-```
-conda create --name levseq python=3.12 -y
-```
-
-```
-conda activate levseq
-```
-
-```
-pip install levseq
-```
-
-#### Dependencies 
-
-1. Samtools: https://www.htslib.org/download/ 
-```
-conda install -c bioconda -c conda-forge samtools
-```
-
-
-2. Minimap2: https://github.com/lh3/minimap2
-
-```
-conda install -c bioconda -c conda-forge minimap2
-```
-3. gcc 13 and 14 on Mac M1 through M4 chips
-```
-brew install gcc@13
-brew install gcc@14
-```
 ### Docker Installation (Recommended for full pipeline)  
 For installing the whole pipeline, you'll need to use the docker image. For this, install docker as required for your 
 operating system (https://docs.docker.com/engine/install/).
 
-### Usage
+Once you have docker installed and running you can run the following command:
 
-#### Run via pip
+If using a linux system pull the linux image:
 ```
-levseq <name of the run you can make this whatever> <location to data folder> <location of reference csv file>
+docker pull yueminglong/levseq:levseq-1.4-x86
+```
+If using Mac M chips (image tested on M1, M3, and M4) pull the 
+```
+docker pull yueminglong/levseq:levseq-1.4-arm64
 ```
 
 #### Run via docker
-If using linux system
-```
-docker pull yueminglong/levseq:levseq-1.2.5-x86
-```
-If using Mac M chips (image tested on M1, M3, and M4)
-```
-docker pull yueminglong/levseq:levseq-1.2.5-arm64
-```
+
+When using docker make sure you check for the latest version here: https://hub.docker.com/r/yueminglong/levseq/tags
 
 ```
 docker run --rm -v "$(pwd):/levseq_results" yueminglong/levseq:levseq-1.2.5-<architecture> <name> <location to data folder> <location of reference csv file>
 ```
-Explanation:
 
---rm: Automatically removes the container after the command finishes.
+Example command:
 
--v "$(pwd):/levseq\_results": Mounts the current directory ($(pwd)) to /levseq\_results inside the container, ensuring the results are saved to your current directory.
+```
+docker run --rm -v "/home/user/Documents/nanopore_data/:/levseq_results" yueminglong/levseq:levseq-1.2.5-arm64 my_first_run levseq_results/ levseq_results/ref.csv
+```
+Within the folder `/home/user/Documents/nanopore_data/` (note this has to be the FULL path) located on your computer you should have the `fastq_pass` files (these can be in a subfolder) and also a file called `ref.csv` which has your parent sequence in it (it needs the columns below).
 
-yueminglong/levseq:levseq-1.2.5-\<architecture\>: Specifies the Docker image to run. Replace \<architecture\> with the appropriate platform (e.g., x86).
+### Example ref.csv
 
-\<name\>: The name or identifier for the analysis.
+| barcode_plate | name   | refseq    |
+|---------------|--------|-----------|
+| 33            | Q97A76 | ATGCGC... |
+| 33            | Q97A76 | ATGCGC... |
 
-\<location to data folder\>: Path to the folder containing input data.
+##### Explanation:
 
-\<location of reference csv file\>: Path to the reference .csv file.
+`--rm`: Automatically removes the container after the command finishes.
 
-Important Notes:
+`-v "$(pwd):/levseq\_results"`: Mounts the current directory ($(pwd)) (alternatively pass a full path here) to /levseq\_results inside the container, ensuring the results are saved to your current directory.
+
+`yueminglong/levseq:levseq-1.2.5-\<architecture\>`: Specifies the Docker image to run. Replace \<architecture\> with the appropriate platform (e.g., x86).
+
+`\<name\>`: The name or identifier for the analysis.
+
+`\<location to data folder\>`: Path to the folder containing input data.
+
+`\<location of reference csv file\>`: Path to the reference .csv file.
+
+##### Important Notes:
 
 If the current directory is mounted to the container (via -v "$(pwd):/levseq\_results"), the basecalled result in FASTQ format and the ref.csv file must be located in the current directory.
 
 If these files are not present in the current directory, they will not be processed by the tool.
 
-Output:
+#### Output:
 
 The results of the analysis will be saved to your current working directory.
 
@@ -134,6 +111,63 @@ See the [manuscrtipt notebook](https://github.com/fhalab/LevSeq/blob/main/manusc
 Great you should be all done!
 
 For more details or trouble shooting please look at our [computational_protocols](https://github.com/fhalab/LevSeq/wiki/Computational-protocols).
+
+### Running via pip (mac and linux only)
+We also typically run LevSeq directly using the pip install (note you need `samtools` 
+and `minimap2` installed on your path. However, if you have issues we recommend using the Docker instance! 
+(the pip version doesn't work well with mac M3 but docker does.)
+
+We recommend using terminal and a conda environment for installation:
+
+```
+conda create --name levseq python=3.12 -y
+```
+
+```
+conda activate levseq
+```
+
+```
+pip install levseq
+```
+
+#### Dependencies for pip version 
+
+1. Samtools: https://www.htslib.org/download/ 
+```
+conda install -c bioconda -c conda-forge samtools
+```
+
+2. Minimap2: https://github.com/lh3/minimap2
+
+```
+conda install -c bioconda -c conda-forge minimap2
+```
+3. gcc 13 and 14 on Mac M1 through M4 chips
+```
+brew install gcc@13
+brew install gcc@14
+```
+
+### Usage
+
+#### Run via pip
+```
+levseq <name of the run you can make this whatever> <location to data folder> <location of reference csv file>
+```
+
+### Running as an oligopool 
+For those of you who are interested in using this for multiple proteins (i.e. many different proteins on a plate) you may want to use our oligopool demultiplexing. 
+
+The experimental side is the same as the original LevSeq, however, we have updated the code to handle multiple proteins. For this you add the flag: `--oligopool` and the `ref.csv` 
+is formatted slightly differently, for example, say you have two barcodes, each with two potential enzymes you would have in your `ref.csv`.
+
+| barcode_plate | name   | refseq    |
+|---------------|--------|-----------|
+| 33            | Q97A76 | ATGCGCAAG |
+| 33            | P96084 | ATGGATCA  |
+| 34            | P46209 | ATGGGGCAA |
+| 34            | Q60336 | ATGGGGCC  |
 
 #### Citing
 
